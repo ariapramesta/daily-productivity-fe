@@ -20,7 +20,5 @@ export default function ProtectedRoute({ children }) {
             });
     }, [router]);
 
-    if (loading) return <p>Loading...</p>;
-
     return <>{children}</>;
 }
