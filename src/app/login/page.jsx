@@ -1,20 +1,29 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import api from "@/lib/api";
+import { login } from "@/lib/authApi"; // pakai helper dari lib/api
+import { useAuthStore } from "@/store/useAuthStore"; // zustand store
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const router = useRouter();
+  const setUser = useAuthStore((state) => state.setUser);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      await api.post("/auth/login", { email, password });
+      // panggil helper login -> backend return { user, message }
+      const data = await login(email, password);
+
+      // simpan user ke zustand
+      setUser(data.user);
+
+      // redirect ke halaman utama
       router.push("/");
     } catch (err) {
-      alert(err.response?.data?.message || "Login failed");
+      setError(err.response?.data?.message || "Login failed");
     }
   };
 
@@ -23,6 +32,9 @@ export default function Login() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-900 via-black to-zinc-900">
         <div className="w-full max-w-md bg-zinc-800 rounded-2xl shadow-lg p-8 space-y-6">
           <h1 className="text-2xl font-bold text-center text-white">Login</h1>
+
+          {error && <p className="text-center text-red-400">{error}</p>}
+
           <div className="space-y-4">
             <div className="flex flex-col">
               <label htmlFor="email" className="text-sm text-zinc-300 mb-1">
@@ -30,7 +42,6 @@ export default function Login() {
               </label>
               <input
                 type="email"
-                name="email"
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -44,7 +55,6 @@ export default function Login() {
               </label>
               <input
                 type="password"
-                name="password"
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -54,7 +64,10 @@ export default function Login() {
             </div>
           </div>
 
-          <button className="w-full bg-gradient-to-r from-zinc-700 to-zinc-900 text-white font-semibold py-2 rounded-lg shadow-md hover:opacity-90 transition">
+          <button
+            type="submit"
+            className="w-full bg-gradient-to-r from-zinc-700 to-zinc-900 text-white font-semibold py-2 rounded-lg shadow-md hover:opacity-90 transition"
+          >
             Sign In
           </button>
 

@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import api from "@/lib/api";
+import api from "@/lib/axios";
 import { useRouter } from "next/navigation";
 
 export default function Register() {
@@ -21,8 +21,8 @@ export default function Register() {
 
     try {
       await api.post("/auth/register", { email, name, password });
-      alert("Register success, silakan login");
-      router.push("/login");
+      alert("Register success");
+      router.push("/");
     } catch (err) {
       alert(err.response?.data?.message || "Register failed");
     }

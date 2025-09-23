@@ -11,10 +11,13 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export default function Sidebar() {
   const { isOpen, setIsOpen } = useSidebar();
   const pathname = usePathname();
+
+  const { user } = useAuthStore();
 
   const menus = [
     { name: "Dashboard", href: "/", icon: Home },
@@ -81,6 +84,25 @@ export default function Sidebar() {
           })}
         </ul>
       </nav>
+
+      {/* User Info di bawah */}
+      {user && (
+        <a href="/profile">
+          <div className="p-4 border-t border-zinc-800 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-zinc-700 rounded-full flex items-center justify-center text-sm font-bold">
+                {user.name?.charAt(0).toUpperCase()}
+              </div>
+              {isOpen && (
+                <div>
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-gray-400">{user.email}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </a>
+      )}
     </div>
   );
 }
