@@ -7,8 +7,8 @@ import {
   ListTodo,
   Wallet,
   Folder,
-  ChevronLeft,
-  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -40,9 +40,9 @@ export default function Sidebar() {
           className="p-1 rounded hover:bg-zinc-800"
         >
           {isOpen ? (
-            <ChevronLeft className="w-5 h-5" />
+            <PanelLeftClose className="w-5 h-5" />
           ) : (
-            <ChevronRight className="w-5 h-5" />
+            <PanelLeftOpen className="w-5 h-5" />
           )}
         </button>
       </div>

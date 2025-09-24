@@ -1,4 +1,4 @@
-import api from "./axios"; // kalau file axios.js kamu taruh di sini
+import api from "./axios";
 
 // Login
 export async function login(email, password) {
@@ -6,6 +6,7 @@ export async function login(email, password) {
     return res.data;
 }
 
+// Register
 export async function register(email, name, password) {
     const res = await api.post("/auth/register", { email, name, password });
     return res.data;
