@@ -3,7 +3,6 @@ import { useState } from "react";
 import { LogOut, X, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
-import ProtectedRoute from "@/components/ProtectedRoute";
 import { logoutApi } from "@/lib/authApi";
 import Link from "next/link";
 
@@ -23,7 +22,7 @@ export default function Profile() {
   };
 
   return (
-    <ProtectedRoute>
+    <>
       {!user ? (
         <div className="min-h-screen flex items-center justify-center bg-zinc-900 text-white">
           <p>Loading profile...</p>
@@ -106,6 +105,6 @@ export default function Profile() {
           </div>
         </div>
       )}
-    </ProtectedRoute>
+    </>
   );
 }

@@ -6,6 +6,11 @@ export async function login(email, password) {
     return res.data;
 }
 
+export async function register(email, name, password) {
+    const res = await api.post("/auth/register", { email, name, password });
+    return res.data;
+}
+
 // Logout
 export async function logoutApi() {
     const res = await api.post("/auth/logout");
