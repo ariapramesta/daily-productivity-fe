@@ -2,10 +2,12 @@
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/SideBar";
 import { List, Grid2X2, ArrowUpDown } from "lucide-react";
-import { getNotes } from "@/lib/notesApi";
+import { createNote, getNotes } from "@/lib/notesApi";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const router = useRouter();
   const [notes, setNotes] = useState([]);
   const [viewMode, setViewMode] = useState("grid");
   const [loading, setLoading] = useState(true);
@@ -24,13 +26,25 @@ export default function Home() {
     fetchNotes();
   }, []);
 
+  const handleAddNote = async () => {
+    try {
+      const newNote = await createNote("Untitled Note", "");
+      router.push(`/notes/${newNote.id}`);
+    } catch (err) {
+      console.error("failed to create note:", err);
+    }
+  };
+
   return (
     <div className="flex h-screen">
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
       <main className="flex-1 p-6 transition-all duration-300 relative">
         {/* Floating Add Button */}
-        <button className="absolute bottom-5 right-5 py-4 px-6 text-2xl rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800">
+        <button
+          onClick={handleAddNote}
+          className="absolute bottom-5 right-5 py-4 px-6 text-2xl rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800"
+        >
           +
         </button>
 
@@ -67,7 +81,12 @@ export default function Home() {
 
         {/* Notes Section */}
         {loading ? (
-          <p className="text-zinc-400 text-center">Loading notes...</p>
+          <div className="flex flex-col items-center justify-center bg-gradient-to-br from-zinc-900 via-black to-zinc-900">
+            <div className="w-12 h-12 border-4 border-zinc-600 border-t-white rounded-full animate-spin"></div>
+            <p className="mt-4 text-sm text-zinc-400 animate-pulse">
+              Loading your notes...
+            </p>
+          </div>
         ) : notes.length === 0 ? (
           <p className="text-zinc-400 text-center">No notes found.</p>
         ) : viewMode === "grid" ? (
@@ -76,6 +95,7 @@ export default function Home() {
             {notes.map((note) => (
               <div
                 key={note.id}
+                onClick={() => router.push(`/notes/${note.id}`)}
                 className="rounded-2xl bg-zinc-800 shadow-lg hover:shadow-xl hover:bg-zinc-700 transition cursor-pointer flex flex-col p-5"
               >
                 <h3 className="text-lg font-bold text-white mb-3 line-clamp-1">
@@ -98,6 +118,7 @@ export default function Home() {
             {notes.map((note) => (
               <div
                 key={note.id}
+                onClick={() => router.push(`/notes/${note.id}`)}
                 className="p-4 rounded-lg bg-zinc-800 shadow hover:bg-zinc-700 transition cursor-pointer flex justify-between items-center"
               >
                 <div>

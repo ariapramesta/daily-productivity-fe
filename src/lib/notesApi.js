@@ -23,7 +23,7 @@ export async function createNote(title, content) {
 }
 
 // Update Note
-export async function updateNote(id, title, content) {
+export async function updateNote(id, { title, content }) {
     const res = await api.put(
         `/notes/${id}`,
         { title, content },
