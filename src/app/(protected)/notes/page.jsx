@@ -1,9 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { debounce } from "lodash";
 import Sidebar from "@/components/SideBar";
 import { List, Grid2X2, ArrowUpDown } from "lucide-react";
 import { createNote, getNotes } from "@/lib/notesApi";
 import { useRouter } from "next/navigation";
+import api from "@/lib/axios";
 
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -11,18 +13,30 @@ export default function Home() {
   const [notes, setNotes] = useState([]);
   const [viewMode, setViewMode] = useState("grid");
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+
+  const fetchNotes = async (q) => {
+    try {
+      let res;
+      if (!q || !q.trim()) {
+        res = await api.get("/notes", { withCredentials: true });
+      } else {
+        res = await api.get(`/notes?search=${encodeURIComponent(q)}`, {
+          withCredentials: true,
+        });
+      }
+
+      // backend: { data: [...], meta: {...} }
+      setNotes(res.data.data || []);
+    } catch (err) {
+      console.error("Search failed:", err);
+      setNotes([]); // fallback ke array kosong biar gak error
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchNotes = async () => {
-      try {
-        const data = await getNotes();
-        setNotes(data);
-      } catch (err) {
-        console.error("Failed to load notes:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchNotes();
   }, []);
 
@@ -33,6 +47,19 @@ export default function Home() {
     } catch (err) {
       console.error("failed to create note:", err);
     }
+  };
+
+  const debouncedSearch = useCallback(
+    debounce((val) => {
+      fetchNotes(val);
+    }, 500),
+    []
+  );
+
+  const handleChange = (e) => {
+    const val = e.target.value;
+    setQuery(val);
+    debouncedSearch(val);
   };
 
   return (
@@ -66,8 +93,8 @@ export default function Home() {
           <form action="post" className="flex-1 max-w-lg">
             <input
               type="search"
-              name="q"
-              id="search"
+              value={query}
+              onChange={handleChange}
               placeholder="Search..."
               className="w-full px-4 py-2 rounded-lg bg-zinc-800 text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
             />
@@ -96,12 +123,12 @@ export default function Home() {
               <div
                 key={note.id}
                 onClick={() => router.push(`/notes/${note.id}`)}
-                className="rounded-2xl bg-zinc-800 shadow-lg hover:shadow-xl hover:bg-zinc-700 transition cursor-pointer flex flex-col p-5"
+                className="rounded-2xl bg-zinc-800 shadow-lg hover:shadow-xl hover:bg-zinc-700 transition cursor-pointer flex flex-col p-5 h-48"
               >
                 <h3 className="text-lg font-bold text-white mb-3 line-clamp-1">
                   {note.title}
                 </h3>
-                <p className="text-sm text-zinc-400 line-clamp-4 flex-1">
+                <p className="text-sm text-zinc-400 line-clamp-4 flex-1 overflow-hidden">
                   {note.content}
                 </p>
                 <div className="mt-4 text-right">
@@ -119,13 +146,15 @@ export default function Home() {
               <div
                 key={note.id}
                 onClick={() => router.push(`/notes/${note.id}`)}
-                className="p-4 rounded-lg bg-zinc-800 shadow hover:bg-zinc-700 transition cursor-pointer flex justify-between items-center"
+                className="p-4 rounded-lg bg-zinc-800 shadow hover:bg-zinc-700 transition cursor-pointer flex justify-between items-center h-24"
               >
-                <div>
-                  <h3 className="text-lg font-semibold text-white">
+                <div className="overflow-hidden">
+                  <h3 className="text-lg font-semibold text-white line-clamp-1">
                     {note.title}
                   </h3>
-                  <p className="text-sm text-zinc-400">{note.content}</p>
+                  <p className="text-sm text-zinc-400 line-clamp-1">
+                    {note.content}
+                  </p>
                 </div>
                 <span className="text-xs text-zinc-500">
                   {new Date(note.updatedAt).toLocaleDateString()}
