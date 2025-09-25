@@ -1,8 +1,9 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getNote, updateNote, deleteNote } from "@/lib/notesApi";
 import { ArrowLeft, Trash2 } from "lucide-react";
+import { debounce } from "lodash";
 
 export default function NotePage() {
   const { id } = useParams();
@@ -11,8 +12,6 @@ export default function NotePage() {
   const [note, setNote] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
-  const saveTimer = useRef(null);
 
   useEffect(() => {
     const fetchNote = async () => {
@@ -29,25 +28,28 @@ export default function NotePage() {
     fetchNote();
   }, [id, router]);
 
+  const debouncedSave = useMemo(
+    () =>
+      debounce(async (updated) => {
+        try {
+          setSaving(true);
+          await updateNote(id, {
+            title: updated.title,
+            content: updated.content,
+          });
+        } catch (err) {
+          console.error("Failed to save:", err);
+        } finally {
+          setSaving(false);
+        }
+      }, 500),
+    [id]
+  );
+
   const handleChange = (field, value) => {
     const updated = { ...note, [field]: value, updatedAt: new Date() };
     setNote(updated);
-
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-
-    saveTimer.current = setTimeout(async () => {
-      try {
-        setSaving(true);
-        await updateNote(id, {
-          title: updated.title,
-          content: updated.content,
-        });
-      } catch (err) {
-        console.error("Failed to save:", err);
-      } finally {
-        setSaving(false);
-      }
-    }, 1500);
+    debouncedSave(updated);
   };
 
   const handleDelete = async () => {
@@ -83,7 +85,7 @@ export default function NotePage() {
         <div className="flex items-center gap-3">
           {/* Back button */}
           <button
-            onClick={() => router.back()} // asumsi pakai Next.js router
+            onClick={() => router.back()}
             className="p-2 rounded-lg hover:bg-zinc-800 transition-colors"
           >
             <ArrowLeft size={20} />
