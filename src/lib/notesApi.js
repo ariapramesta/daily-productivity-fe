@@ -1,10 +1,14 @@
 import api from "./axios";
 
 // Get All Notes
-export async function getNotes() {
-    const res = await api.get("/notes", { withCredentials: true });
+export const getNotes = async ({ page = 1, limit = 10, search = "", sortOrder = "desc" } = {}) => {
+    const res = await api.get("/notes", {
+        params: { page, limit, search, sortOrder },
+        withCredentials: true,
+    });
+
     return res.data;
-}
+};
 
 // Get Single Note
 export async function getNote(id) {

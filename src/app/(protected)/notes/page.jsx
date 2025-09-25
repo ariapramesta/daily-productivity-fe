@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { debounce } from "lodash";
 import Sidebar from "@/components/SideBar";
-import { List, Grid2X2, ArrowUpDown } from "lucide-react";
+import { List, Grid2X2, ArrowDown01, ArrowUp01 } from "lucide-react";
 import { createNote, getNotes } from "@/lib/notesApi";
 import { useRouter } from "next/navigation";
 import api from "@/lib/axios";
@@ -14,23 +14,16 @@ export default function Home() {
   const [viewMode, setViewMode] = useState("grid");
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState("desc");
 
-  const fetchNotes = async (q) => {
+  const fetchNotes = async (q = "") => {
     try {
-      let res;
-      if (!q || !q.trim()) {
-        res = await api.get("/notes", { withCredentials: true });
-      } else {
-        res = await api.get(`/notes?search=${encodeURIComponent(q)}`, {
-          withCredentials: true,
-        });
-      }
-
-      // backend: { data: [...], meta: {...} }
-      setNotes(res.data.data || []);
+      setLoading(true);
+      const res = await getNotes({ search: q, sortOrder });
+      setNotes(res.data || []);
     } catch (err) {
-      console.error("Search failed:", err);
-      setNotes([]); // fallback ke array kosong biar gak error
+      console.error("Failed to load notes:", err);
+      setNotes([]);
     } finally {
       setLoading(false);
     }
@@ -38,7 +31,15 @@ export default function Home() {
 
   useEffect(() => {
     fetchNotes();
-  }, []);
+  }, [sortOrder]);
+
+  const sortedNotes = [...notes].sort((a, b) => {
+    if (sortOrder === "desc") {
+      return new Date(b.updatedAt) - new Date(a.updatedAt);
+    } else {
+      return new Date(a.updatedAt) - new Date(b.updatedAt);
+    }
+  });
 
   const handleAddNote = async () => {
     try {
@@ -101,8 +102,15 @@ export default function Home() {
           </form>
 
           {/* Sort Button */}
-          <button className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition">
-            <ArrowUpDown className="w-5 h-5 text-white" />
+          <button
+            onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
+            className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition"
+          >
+            {sortOrder === "desc" ? (
+              <ArrowDown01 className="w-5 h-5 text-white" />
+            ) : (
+              <ArrowUp01 className="w-5 h-5 text-white" />
+            )}
           </button>
         </div>
 
@@ -114,12 +122,12 @@ export default function Home() {
               Loading your notes...
             </p>
           </div>
-        ) : notes.length === 0 ? (
+        ) : sortedNotes.length === 0 ? (
           <p className="text-zinc-400 text-center">No notes found.</p>
         ) : viewMode === "grid" ? (
           // GRID MODE
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {notes.map((note) => (
+            {sortedNotes.map((note) => (
               <div
                 key={note.id}
                 onClick={() => router.push(`/notes/${note.id}`)}
