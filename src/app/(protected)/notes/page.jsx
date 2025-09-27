@@ -1,74 +1,41 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { debounce } from "lodash";
-import Sidebar from "@/components/SideBar";
-import { List, Grid2X2, ArrowDown01, ArrowUp01 } from "lucide-react";
-import { createNote, getNotes } from "@/lib/notesApi";
 import { useRouter } from "next/navigation";
-import api from "@/lib/axios";
+import Sidebar from "@/components/SideBar";
+import NotesToolbar from "./components/NotesToolbar";
+import NotesGrid from "./components/NotesGrid";
+import NotesList from "./components/NotesList";
+import { useNotesStore } from "@/store/useNotesStore";
 
-export default function Home() {
+export default function NotesPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const router = useRouter();
-  const [notes, setNotes] = useState([]);
   const [viewMode, setViewMode] = useState("grid");
-  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState("desc");
 
-  const fetchNotes = async (q = "") => {
-    try {
-      setLoading(true);
-      const res = await getNotes({ search: q, sortOrder });
-      setNotes(res.data || []);
-    } catch (err) {
-      console.error("Failed to load notes:", err);
-      setNotes([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const router = useRouter();
+  const { notes, loading, fetchNotes, addNote, sortOrder, toggleSort } =
+    useNotesStore();
 
   useEffect(() => {
-    fetchNotes();
-  }, [sortOrder]);
-
-  const sortedNotes = [...notes].sort((a, b) => {
-    if (sortOrder === "desc") {
-      return new Date(b.updatedAt) - new Date(a.updatedAt);
-    } else {
-      return new Date(a.updatedAt) - new Date(b.updatedAt);
-    }
-  });
-
-  const handleAddNote = async () => {
-    try {
-      const newNote = await createNote("Untitled Note", "");
-      router.push(`/notes/${newNote.id}`);
-    } catch (err) {
-      console.error("failed to create note:", err);
-    }
-  };
+    fetchNotes(query, sortOrder);
+  }, [query, sortOrder]);
 
   const debouncedSearch = useCallback(
     debounce((val) => {
-      fetchNotes(val);
+      fetchNotes(val, sortOrder);
     }, 500),
-    []
+    [sortOrder]
   );
 
-  const handleChange = (e) => {
-    const val = e.target.value;
+  const handleSearch = (val) => {
     setQuery(val);
     debouncedSearch(val);
   };
 
-  const getPreview = (text, length = 100) => {
-    if (!text) return "";
-    const cleanText = text.replace(/\n+/g, " ");
-    return cleanText.length > length
-      ? cleanText.substring(0, length) + "..."
-      : cleanText;
+  const handleAddNote = async () => {
+    const newNote = await addNote();
+    if (newNote) router.push(`/notes/${newNote.id}`);
   };
 
   return (
@@ -85,42 +52,14 @@ export default function Home() {
         </button>
 
         {/* Toolbar */}
-        <div className="flex items-center justify-center gap-4 w-full mb-6">
-          {/* Toggle View (List / Grid) */}
-          <button
-            onClick={() => setViewMode(viewMode === "list" ? "grid" : "list")}
-            className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition"
-          >
-            {viewMode === "list" ? (
-              <Grid2X2 className="w-5 h-5 text-white" />
-            ) : (
-              <List className="w-5 h-5 text-white" />
-            )}
-          </button>
-
-          {/* Search */}
-          <form action="post" className="flex-1 max-w-lg">
-            <input
-              type="search"
-              value={query}
-              onChange={handleChange}
-              placeholder="Search..."
-              className="w-full px-4 py-2 rounded-lg bg-zinc-800 text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
-            />
-          </form>
-
-          {/* Sort Button */}
-          <button
-            onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
-            className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition"
-          >
-            {sortOrder === "desc" ? (
-              <ArrowDown01 className="w-5 h-5 text-white" />
-            ) : (
-              <ArrowUp01 className="w-5 h-5 text-white" />
-            )}
-          </button>
-        </div>
+        <NotesToolbar
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          query={query}
+          onSearch={handleSearch}
+          sortOrder={sortOrder}
+          onToggleSort={toggleSort}
+        />
 
         {/* Notes Section */}
         {loading ? (
@@ -130,54 +69,18 @@ export default function Home() {
               Loading your notes...
             </p>
           </div>
-        ) : sortedNotes.length === 0 ? (
+        ) : notes.length === 0 ? (
           <p className="text-zinc-400 text-center">No notes found.</p>
         ) : viewMode === "grid" ? (
-          // GRID MODE
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {sortedNotes.map((note) => (
-              <div
-                key={note.id}
-                onClick={() => router.push(`/notes/${note.id}`)}
-                className="rounded-2xl bg-zinc-800 shadow-lg hover:shadow-xl hover:bg-zinc-700 transition cursor-pointer flex flex-col p-5 h-48"
-              >
-                <h3 className="text-lg font-bold text-white mb-3 line-clamp-1">
-                  {note.title}
-                </h3>
-                <p className="text-sm text-zinc-400 line-clamp-4 flex-1 overflow-hidden">
-                  {getPreview(note.content, 120)}
-                </p>
-                <div className="mt-4 text-right">
-                  <span className="text-xs text-zinc-500">
-                    {new Date(note.updatedAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+          <NotesGrid
+            notes={notes}
+            onNoteClick={(note) => router.push(`/notes/${note.id}`)}
+          />
         ) : (
-          // LIST MODE
-          <div className="space-y-3">
-            {notes.map((note) => (
-              <div
-                key={note.id}
-                onClick={() => router.push(`/notes/${note.id}`)}
-                className="p-4 rounded-lg bg-zinc-800 shadow hover:bg-zinc-700 transition cursor-pointer flex justify-between items-center h-24"
-              >
-                <div className="overflow-hidden">
-                  <h3 className="text-lg font-semibold text-white line-clamp-1">
-                    {note.title}
-                  </h3>
-                  <p className="text-sm text-zinc-400 line-clamp-1">
-                    {getPreview(note.content, 80)}
-                  </p>
-                </div>
-                <span className="text-xs text-zinc-500">
-                  {new Date(note.updatedAt).toLocaleDateString()}
-                </span>
-              </div>
-            ))}
-          </div>
+          <NotesList
+            notes={notes}
+            onNoteClick={(note) => router.push(`/notes/${note.id}`)}
+          />
         )}
       </main>
     </div>
