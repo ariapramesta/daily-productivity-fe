@@ -43,7 +43,7 @@ export default function Sidebar() {
       initial={{ width: isOpen ? 256 : 64 }}
       animate={{ width: isOpen ? 256 : 64 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="h-screen bg-zinc-900 text-gray-200 rounded-r-3xl flex flex-col border-r border-zinc-800 overflow-hidden"
+      className="h-screen sticky top-0 bg-zinc-900 text-gray-200 rounded-r-3xl flex flex-col border-r border-zinc-800 overflow-y-auto flex-shrink-0"
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-zinc-800">
@@ -80,7 +80,7 @@ export default function Sidebar() {
                       className={`flex items-center p-3 rounded-md relative overflow-hidden ${
                         active
                           ? "bg-gradient-to-r from-indigo-600/20 to-transparent text-white"
-                          : "hover:bg-zinc-800 hover:text-white"
+                          : "hover:bg-gradient-to-r from-indigo-600/20 to-transparent text-white"
                       }`}
                     >
                       {active && (

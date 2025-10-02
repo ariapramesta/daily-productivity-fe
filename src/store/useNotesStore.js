@@ -12,13 +12,32 @@ export const useNotesStore = create((set, get) => ({
     notes: [],
     loading: false,
     sortOrder: "desc",
+    pagination: {
+        total: 0,
+        page: 1,
+        limit: 10,
+        totalPages: 0,
+    },
 
-    // Fetch all notes
-    fetchNotes: async (q = "", sortOrder = "desc") => {
+    // Fetch all notes (with pagination + search + sort)
+    fetchNotes: async ({ q = "", page = 1, limit = 20, sortOrder = "desc" } = {}) => {
         set({ loading: true });
         try {
-            const res = await getNotes({ search: q, sortOrder });
-            set({ notes: res.data || [], loading: false, sortOrder });
+            const res = await getNotes({ search: q, page, limit, sort: "updatedAt", order: sortOrder });
+
+            set({
+                notes: res.data || [],
+                pagination: res.meta
+                    ? {
+                        total: res.meta.total,
+                        page: res.meta.page,
+                        limit: res.meta.limit,
+                        totalPages: res.meta.totalPages,
+                    }
+                    : get().pagination, // fallback kalau meta gak ada
+                loading: false,
+                sortOrder,
+            });
         } catch (err) {
             console.error("Failed to fetch notes:", err);
             set({ loading: false });

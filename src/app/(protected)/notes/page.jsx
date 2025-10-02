@@ -18,12 +18,12 @@ export default function NotesPage() {
     useNotesStore();
 
   useEffect(() => {
-    fetchNotes(query, sortOrder);
+    fetchNotes({ q: query, page: 1, sortOrder });
   }, [query, sortOrder]);
 
   const debouncedSearch = useCallback(
     debounce((val) => {
-      fetchNotes(val, sortOrder);
+      fetchNotes({ q: val, page: 1, sortOrder });
     }, 500),
     [sortOrder]
   );
@@ -42,7 +42,7 @@ export default function NotesPage() {
     <div className="flex h-screen">
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
-      <main className="flex-1 p-6 transition-all duration-300 relative">
+      <main className="flex-1 p-6 md:py-6 md:px-10 transition-all duration-300 overflow-y-auto">
         {/* Floating Add Button */}
         <button
           onClick={handleAddNote}

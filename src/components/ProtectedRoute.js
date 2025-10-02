@@ -6,23 +6,27 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { fetchMe } from "@/lib/authApi";
 
 export default function ProtectedRoute({ children }) {
-    const { user, loading, setUser } = useAuthStore();
+    const { user, loading, setUser, setLoading } = useAuthStore();
     const router = useRouter();
 
     useEffect(() => {
         const checkSession = async () => {
+            setLoading(true); // mulai loading
+
             try {
                 const res = await fetchMe();
                 setUser(res.user);
             } catch (err) {
                 console.error("Session expired or not logged in:", err);
                 setUser(null);
-                router.push("/login");
+                router.replace("/login");
+            } finally {
+                setLoading(false);
             }
         };
 
-        if (loading) checkSession();
-    }, [loading, setUser, router]);
+        checkSession();
+    }, [setUser, setLoading, router]);
 
     if (loading) {
         return (
@@ -35,9 +39,7 @@ export default function ProtectedRoute({ children }) {
         );
     }
 
-    if (!user) {
-        return null;
-    }
+    if (!user) return null;
 
     return <>{children}</>;
 }
