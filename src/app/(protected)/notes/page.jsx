@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+
+import { useEffect, useState, useRef, useCallback } from "react";
 import { debounce } from "lodash";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/SideBar";
@@ -14,17 +15,28 @@ export default function NotesPage() {
   const [query, setQuery] = useState("");
 
   const router = useRouter();
-  const { notes, loading, fetchNotes, addNote, sortOrder, toggleSort } =
-    useNotesStore();
+  const sentinelRef = useRef(null);
 
+  const {
+    notes,
+    loading,
+    fetchNotes,
+    addNote,
+    sortOrder,
+    toggleSort,
+    pagination,
+  } = useNotesStore();
+
+  // Initial fetch
   useEffect(() => {
-    fetchNotes({ q: query, page: 1, sortOrder });
+    fetchNotes({ q: query, sortOrder, page: 1, append: false });
   }, [query, sortOrder]);
 
+  // Debounced search
   const debouncedSearch = useCallback(
-    debounce((val) => {
-      fetchNotes({ q: val, page: 1, sortOrder });
-    }, 500),
+    debounce((val) =>
+      fetchNotes({ q: val, sortOrder, page: 1, append: false })
+    ),
     [sortOrder]
   );
 
@@ -37,6 +49,38 @@ export default function NotesPage() {
     const newNote = await addNote();
     if (newNote) router.push(`/notes/${newNote.id}`);
   };
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loading) {
+          if (pagination.page < pagination.totalPages) {
+            fetchNotes({
+              q: query,
+              sortOrder,
+              page: pagination.page + 1,
+              append: true,
+            });
+          }
+        }
+      },
+      { root: null, rootMargin: "0px", threshold: 1.0 }
+    );
+
+    observer.observe(sentinelRef.current);
+
+    return () => observer.disconnect();
+  }, [
+    sentinelRef.current,
+    loading,
+    pagination.page,
+    pagination.totalPages,
+    query,
+    sortOrder,
+  ]);
 
   return (
     <div className="flex h-screen">
@@ -62,15 +106,8 @@ export default function NotesPage() {
         />
 
         {/* Notes Section */}
-        {loading ? (
-          <div className="flex flex-col items-center justify-center bg-gradient-to-br from-zinc-900 via-black to-zinc-900">
-            <div className="w-12 h-12 border-4 border-zinc-600 border-t-white rounded-full animate-spin"></div>
-            <p className="mt-4 text-sm text-zinc-400 animate-pulse">
-              Loading your notes...
-            </p>
-          </div>
-        ) : notes.length === 0 ? (
-          <p className="text-zinc-400 text-center">No notes found.</p>
+        {notes.length === 0 && !loading ? (
+          <p className="text-zinc-400 text-center mt-10">No notes found.</p>
         ) : viewMode === "grid" ? (
           <NotesGrid
             notes={notes}
@@ -82,6 +119,25 @@ export default function NotesPage() {
             onNoteClick={(note) => router.push(`/notes/${note.id}`)}
           />
         )}
+
+        {/* Loading indicator */}
+        {loading && (
+          <div className="flex justify-center mt-6">
+            <div className="w-8 h-8 border-4 border-zinc-600 border-t-white rounded-full animate-spin"></div>
+          </div>
+        )}
+
+        {/* Sentinel */}
+        <div ref={sentinelRef} className="h-1"></div>
+
+        {/* All loaded indicator */}
+        {!loading &&
+          pagination.page >= pagination.totalPages &&
+          notes.length > 0 && (
+            <p className="text-center text-green-500 mt-4">
+              All notes loaded ✅
+            </p>
+          )}
       </main>
     </div>
   );

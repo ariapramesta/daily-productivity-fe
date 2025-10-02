@@ -1,7 +1,7 @@
 import api from "./axios";
 
 // Get All Notes
-export const getNotes = async ({ page = 1, limit = 10, search = "", sortOrder = "desc" } = {}) => {
+export const getNotes = async ({ page = 1, limit = 20, search = "", sortOrder = "desc" } = {}) => {
     const res = await api.get("/notes", {
         params: { page, limit, search, sortOrder },
         withCredentials: true,
