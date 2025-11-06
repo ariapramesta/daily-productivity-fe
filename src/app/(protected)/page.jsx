@@ -9,7 +9,7 @@ export default function Home() {
     <div className="flex h-screen">
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
-      <main className="flex-1 p-6 transition-all duration-300">
+      <main className="flex-1 transition-all duration-300">
         <h1>Main Content</h1>
         <p>Konten utama sekarang otomatis menyesuaikan sidebar.</p>
       </main>

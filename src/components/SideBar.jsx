@@ -43,7 +43,7 @@ export default function Sidebar() {
       initial={{ width: isOpen ? 256 : 64 }}
       animate={{ width: isOpen ? 256 : 64 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="h-screen sticky top-0 bg-zinc-900 text-gray-200 rounded-r-3xl flex flex-col border-r border-zinc-800 overflow-y-auto flex-shrink-0"
+      className="h-screen sticky top-0 bg-zinc-900 text-gray-200 flex flex-col border-r border-zinc-800 overflow-y-auto flex-shrink-0"
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-zinc-800">
